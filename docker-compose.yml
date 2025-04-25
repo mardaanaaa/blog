@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  my_postgres_db:
+    image: postgres:17.4-alpine
+    container_name: go-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: myuser
+      POSTGRES_PASSWORD: mypassword
+      POSTGRES_DB: mydatabase
+    ports:
+      - "5444:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  my-item-service:
+    depends_on:
+      - my_postgres_db
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: 'my-item-service-iso'
+    container_name: 'my-item-service-container'
+    environment:
+      DB_HOST: my_postgres_db
+      DB_PORT: 5432
+      DB_USER: myuser
+      DB_PASSWORD: mypassword
+      DB_NAME: mydatabase
+    ports:
+      - "8888:8080"
+    volumes:
+      - ./internal/db/migrations:/app/internal/db/migrations
+volumes:
+  postgres_data:
