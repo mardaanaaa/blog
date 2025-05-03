@@ -18,6 +18,7 @@ import (
 
 var DB *gorm.DB
 
+// InitDB - инициализация базы данных и миграций
 func InitDB() {
 	if err := godotenv.Load(); err != nil {
 		log.Println("No .env file found, relying on system environment")
@@ -31,26 +32,32 @@ func InitDB() {
 	sslmode := "disable"
 	dbUrl := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=%s", dbUser, dbPass, dbHost, dbPort, dbName, sslmode)
 	fmt.Println(dbUrl)
+
+	// Открытие соединения с базой данных
 	sqlDB, err := sql.Open(databaseName, dbUrl)
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	// Настройка миграций
 	driver, err := migratepg.WithInstance(sqlDB, &migratepg.Config{})
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	// Получаем текущую рабочую директорию
 	cwd, err := os.Getwd()
 	if err != nil {
 		log.Fatalf("failed to get working dir: %v", err)
 	}
 	log.Println("Current working dir:", cwd)
 
+	// Путь к миграциям
 	migrationsPath := filepath.Join(cwd, "internal", "db", "migrations")
 	migrationsURL := fmt.Sprintf("file://%s", migrationsPath)
 	log.Println("Migrations path:", migrationsURL)
 
+	// Запуск миграций
 	m, err := migrate.NewWithDatabaseInstance(migrationsURL, databaseName, driver)
 	if err != nil {
 		log.Fatal(err)
@@ -59,6 +66,7 @@ func InitDB() {
 		log.Fatal(err)
 	}
 
+	// Подключение к базе данных через GORM
 	gormDB, err := gorm.Open(postgres.New(postgres.Config{
 		Conn: sqlDB,
 	}), &gorm.Config{})
@@ -66,4 +74,9 @@ func InitDB() {
 		log.Fatal(err)
 	}
 	DB = gormDB
+}
+
+// GetDB - получение подключения к базе данных
+func GetDB() *gorm.DB {
+	return DB
 }
